@@ -8,15 +8,14 @@ def part1(_codes, verbose=False):
     return output
 
 
-def part2(_codes, verbose=True):
-    output = intcode_computer(_codes, _input=5)
+def part2(_codes, verbose=False):
+    output = intcode_computer(_codes, _input=5, verbose=verbose)
     return output
 
 
 def intcode_computer(_codes, _input, verbose=True):
     codes = _codes.copy()
     point = 0
-    _input = 1
     while True:
         instruction = codes[point]
 
@@ -50,8 +49,6 @@ def intcode_computer(_codes, _input, verbose=True):
             result = codes[point + 3]
             result_mode = instruction[-5]
             if result_mode != "0":
-                print(instruction)
-                print(result_mode)
                 raise ValueError(
                     "Parameters that an instruction writes to will never be in immediate mode."
                 )
@@ -59,6 +56,10 @@ def intcode_computer(_codes, _input, verbose=True):
             codes[result] = operation_result
             if verbose:
                 print(f"Storing {operation_result} to address {result}")
+            point += skip
+            if verbose:
+                print(f"Skipping {skip} to {point}")
+
         elif opcode in [3, 4]:
             skip = 2
             parameter = codes[point + 1]
@@ -74,29 +75,79 @@ def intcode_computer(_codes, _input, verbose=True):
                     output = codes[parameter]
                 else:
                     output = int(parameter)
-                print(f"Output: {output}")
+                if verbose:
+                    print(f"Output: {output}")
+            point += skip
+            if verbose:
+                print(f"Skipping {skip} to {point}")
+
+        elif opcode in [5, 6]:
+            param1 = codes[point + 1]
+            param1_mode = instruction[-3]
+            if param1_mode == "0":
+                param1_value = codes[param1]
+            else:
+                param1_value = param1
+
+            param2 = codes[point + 2]
+            param2_mode = instruction[-4]
+            if param2_mode == "0":
+                param2_value = codes[param2]
+            else:
+                param2_value = param2
+
+            if opcode == 5:
+                cond = param1_value != 0
+            else:
+                cond = param1_value == 0
+
+            if cond:
+                point = param2_value
+            else:
+                point += 3
+
+        elif opcode in [7, 8]:
+            skip = 4
+            param1 = codes[point + 1]
+            param1_mode = instruction[-3]
+            if param1_mode == "0":
+                param1_value = codes[param1]
+            else:
+                param1_value = param1
+
+            param2 = codes[point + 2]
+            param2_mode = instruction[-4]
+            if param2_mode == "0":
+                param2_value = codes[param2]
+            else:
+                param2_value = param2
+
+            param3 = codes[point + 3]
+            param3_mode = instruction[-5]
+            if param3_mode != "0":
+                raise ValueError(
+                    "Parameters that an instruction writes to will never be in immediate mode."
+                )
+
+            if opcode == 7:
+                res = 1 if param1_value < param2_value else 0
+            else:
+                res = 1 if param1_value == param2_value else 0
+
+            codes[param3] = res
+            point += skip
+            if verbose:
+                print(f"Skipping {skip} to {point}")
+
         elif opcode == 99:
             break
         else:
             raise
-        point += skip
-        if verbose:
-            print(f"Skipping {skip} to {point}")
     return output
-
-
-def part2(codes):
-    for noun in range(100):
-        for verb in range(100):
-            _codes = codes.copy()
-            _codes[1] = noun
-            _codes[2] = verb
-            ret = part1(_codes)
-            if ret == 19690720:
-                return 100 * noun + verb
 
 
 if __name__ == "__main__":
     with open(os.path.join("data", "day05_1.txt")) as f:
         codes = [int(code) for code in f.read().split(",")]
         print(part1(codes))
+        print(part2(codes))
