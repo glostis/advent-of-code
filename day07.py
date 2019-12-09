@@ -86,7 +86,7 @@ def parse_instruction(codes, point):
         else:
             raise ValueError(f"Unknown operation mode {operand_modes[i]}")
 
-    if opcode in [1, 2]:
+    if opcode in [1, 2, 7, 8]:
         result_address = codes[point + 3]
         if operand_modes[2] != "0":
             raise ValueError(
@@ -156,59 +156,24 @@ def intcode_computer(
                 print(f"Skipping {skip} to {point}")
 
         elif opcode in [5, 6]:
-            param1 = codes[point + 1]
-            param1_mode = instruction[-3]
-            if param1_mode == "0":
-                param1_value = codes[param1]
-            else:
-                param1_value = param1
-
-            param2 = codes[point + 2]
-            param2_mode = instruction[-4]
-            if param2_mode == "0":
-                param2_value = codes[param2]
-            else:
-                param2_value = param2
-
             if opcode == 5:
-                cond = param1_value != 0
+                cond = operands[0] != 0
             else:
-                cond = param1_value == 0
+                cond = operands[0] == 0
 
             if cond:
-                point = param2_value
+                point = operands[1]
             else:
                 point += 3
 
         elif opcode in [7, 8]:
             skip = 4
-            param1 = codes[point + 1]
-            param1_mode = instruction[-3]
-            if param1_mode == "0":
-                param1_value = codes[param1]
-            else:
-                param1_value = param1
-
-            param2 = codes[point + 2]
-            param2_mode = instruction[-4]
-            if param2_mode == "0":
-                param2_value = codes[param2]
-            else:
-                param2_value = param2
-
-            param3 = codes[point + 3]
-            param3_mode = instruction[-5]
-            if param3_mode != "0":
-                raise ValueError(
-                    "Parameters that an instruction writes to will never be in immediate mode."
-                )
-
             if opcode == 7:
-                res = 1 if param1_value < param2_value else 0
+                res = 1 if operands[0] < operands[1] else 0
             else:
-                res = 1 if param1_value == param2_value else 0
+                res = 1 if operands[0] == operands[1] else 0
 
-            codes[param3] = res
+            codes[result_address] = res
             point += skip
             if verbose:
                 print(f"Skipping {skip} to {point}")
@@ -219,7 +184,7 @@ def intcode_computer(
             else:
                 return output
         else:
-            raise
+            raise ValueError(f"Unknown opcode {opcode}")
     if verbose:
         print()
 
