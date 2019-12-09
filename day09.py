@@ -6,6 +6,11 @@ def part1(_codes, verbose=False):
     return output
 
 
+def part2(_codes, verbose=False):
+    output = intcode_computer(_codes, phase_setting=2, input_signal=None, verbose=verbose)
+    return output
+
+
 class OpCode99(Exception):
     pass
 
@@ -190,3 +195,4 @@ if __name__ == "__main__":
     with open(os.path.join("data", "day09_1.txt")) as f:
         codes = [int(code) for code in f.read().split(",")]
         print(part1(codes))
+        print(part2(codes))
