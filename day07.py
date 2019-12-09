@@ -26,7 +26,7 @@ def part2(_codes, verbose=False):
         states = dict()
         for phase in phases:
             output, __codes, point, input_counter = intcode_computer(
-                _codes, phase, input_signal, return_on_output=True, verbose=verbose
+                _codes, phase, input_signal, return_on_code_4=True, verbose=verbose
             )
             states[phase] = (__codes.copy(), point, input_counter)
             input_signal = output
@@ -39,7 +39,7 @@ def part2(_codes, verbose=False):
                     input_signal=input_signal,
                     point=point,
                     input_counter=input_counter,
-                    return_on_output=True,
+                    return_on_code_4=True,
                     verbose=verbose,
                 )
             except OpCode99:
@@ -110,7 +110,7 @@ def intcode_computer(
     input_signal=None,
     point=0,
     input_counter=0,
-    return_on_output=False,
+    return_on_code_4=False,
     verbose=False,
 ):
     codes = _codes.copy()
@@ -148,7 +148,7 @@ def intcode_computer(
                 output = operands[0]
                 if verbose:
                     print(f"Output: {output}")
-                if return_on_output:
+                if return_on_code_4:
                     point += skip
                     return (output, codes, point, input_counter)
             point += skip
@@ -179,7 +179,7 @@ def intcode_computer(
                 print(f"Skipping {skip} to {point}")
 
         elif opcode == 99:
-            if return_on_output:
+            if return_on_code_4:
                 raise OpCode99("Opcode 99 was reached")
             else:
                 return output
