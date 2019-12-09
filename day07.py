@@ -54,6 +54,56 @@ def part2(_codes, verbose=False):
     return max_output
 
 
+def parse_instruction(codes, point):
+    instruction = codes[point]
+
+    # Left-pad instruction with zeros to make it of length 4
+    instruction = f"{instruction:05}"
+
+    # Parse opcode
+    opcode = int(instruction[-2:])
+
+    # Parse operand modes, and reverse them (so that they are read from left to right)
+    operand_modes = instruction[:-2][::-1]
+
+    if opcode in [1, 2, 5, 6, 7, 8]:
+        nb_params = 2
+    elif opcode in [4]:
+        nb_params = 1
+    else:
+        # Unknown opcode, or halting code 99
+        nb_params = 0
+
+    operands = []
+    for i in range(nb_params):
+        operand = codes[point + i + 1]
+        if operand_modes[i] == "0":
+            # Address mode
+            operands.append(codes[operand])
+        elif operand_modes[i] == "1":
+            # Immediate mode
+            operands.append(operand)
+        else:
+            raise ValueError(f"Unknown operation mode {operand_modes[i]}")
+
+    if opcode in [1, 2]:
+        result_address = codes[point + 3]
+        if operand_modes[2] != "0":
+            raise ValueError(
+                "Parameters that an instruction writes to will never be in immediate mode."
+            )
+    elif opcode in [3]:
+        result_address = codes[point + 1]
+        if operand_modes[0] != "0":
+            raise ValueError(
+                "Parameters that an instruction writes to will never be in immediate mode."
+            )
+    else:
+        result_address = None
+
+    return opcode, instruction, operands, result_address
+
+
 def intcode_computer(
     _codes,
     phase_setting=None,
@@ -65,70 +115,37 @@ def intcode_computer(
 ):
     codes = _codes.copy()
     while True:
-        instruction = codes[point]
-
-        # Left-pad instruction with zeros to make it of length 4
-        instruction = f"{instruction:05}"
-        opcode = int(instruction[-2:])
+        opcode, instruction, operands, result_address = parse_instruction(codes, point)
         if verbose:
             print(f"Opcode {opcode}")
 
         if opcode in [1, 2]:
             skip = 4
-            operand_1 = codes[point + 1]
-            operand_1_mode = instruction[-3]
-            if operand_1_mode == "0":
-                operand_1_value = codes[operand_1]
-            else:
-                operand_1_value = operand_1
-
-            operand_2 = codes[point + 2]
-            operand_2_mode = instruction[-4]
-            if operand_2_mode == "0":
-                operand_2_value = codes[operand_2]
-            else:
-                operand_2_value = operand_2
-
             if opcode == 1:
-                operation_result = operand_1_value + operand_2_value
+                operation_result = operands[0] + operands[1]
             else:
-                operation_result = operand_1_value * operand_2_value
+                operation_result = operands[0] * operands[1]
 
-            result = codes[point + 3]
-            result_mode = instruction[-5]
-            if result_mode != "0":
-                raise ValueError(
-                    "Parameters that an instruction writes to will never be in immediate mode."
-                )
-
-            codes[result] = operation_result
+            codes[result_address] = operation_result
             if verbose:
-                print(f"Storing {operation_result} to address {result}")
+                print(f"Storing {operation_result} to address {result_address}")
             point += skip
             if verbose:
                 print(f"Skipping {skip} to {point}")
 
         elif opcode in [3, 4]:
             skip = 2
-            parameter = codes[point + 1]
-            parameter_mode = instruction[-3]
             if opcode == 3:
-                if parameter_mode != "0":
-                    raise ValueError("Param mode not 0 for opcode 3")
                 if input_counter == 0:
-                    assert phase_setting is not None
                     _input = phase_setting
                 else:
                     _input = input_signal
                 input_counter += 1
                 if verbose:
-                    print(f"Storing input {_input} to address {parameter}")
-                codes[parameter] = _input
+                    print(f"Storing input {_input} to address {result_address}")
+                codes[result_address] = _input
             else:
-                if parameter_mode == "0":
-                    output = codes[parameter]
-                else:
-                    output = int(parameter)
+                output = operands[0]
                 if verbose:
                     print(f"Output: {output}")
                 if return_on_output:
