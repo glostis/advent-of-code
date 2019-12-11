@@ -1,8 +1,36 @@
+# pylint: disable=redefined-outer-name
 import os
 from collections import defaultdict
 
+import numpy as np
+
 
 def part1(_codes, verbose=False):
+    painted, _ = paint_panels(_codes, verbose=verbose)
+    return painted
+
+
+def part2(_codes, verbose=False):
+    _, panels = paint_panels(_codes, starting_color=1, verbose=verbose)
+
+    positions = np.array(list(panels.keys()))
+    xmin, ymin = np.min(positions, axis=0)
+    xmax, ymax = np.max(positions, axis=0)
+    canvas = np.zeros(((ymax - ymin + 1), (xmax - xmin + 1)))
+    for k, v in panels.items():
+        if v == 1:
+            canvas[(ymax - ymin) - (k[1] - ymin), k[0] - xmin] = 1
+    for line in canvas:
+        st = ""
+        for char in line:
+            if char == 1:
+                st += "█"
+            else:
+                st += " "
+        print(st)
+
+
+def paint_panels(_codes, starting_color=0, verbose=False):
     # Stores panels painted at least once
     painted = set()
 
@@ -12,18 +40,27 @@ def part1(_codes, verbose=False):
     # Stores the position of the robot
     x, y = 0, 0
 
+    # Paint the starting panel in the given color
+    panels[(x, y)] = starting_color
+
     # Stores the direction in which the robot is facing
     heading = 0
 
     point = 0
+    relative_base = 0
     while True:
         try:
             # Get the color of the current panel
             inp = panels[(x, y)]
 
             # Run the intcode computer once to get the color that should be painted
-            color, _codes, point, _ = intcode_computer(
-                _codes, phase_setting=inp, point=point, return_on_code_4=True, verbose=verbose
+            color, _codes, point, counter, relative_base = intcode_computer(
+                _codes,
+                phase_setting=inp,
+                point=point,
+                relative_base=relative_base,
+                return_on_code_4=True,
+                verbose=verbose,
             )
             assert color in [0, 1]
 
@@ -38,8 +75,13 @@ def part1(_codes, verbose=False):
 
         try:
             # Run the intcode computer again to get the new robot's heading
-            heading_code, _codes, point, _ = intcode_computer(
-                _codes, phase_setting=inp, point=point, return_on_code_4=True, verbose=verbose
+            heading_code, _codes, point, counter, relative_base = intcode_computer(
+                _codes,
+                phase_setting=None,
+                point=point,
+                relative_base=relative_base,
+                return_on_code_4=True,
+                verbose=verbose,
             )
             assert heading_code in [0, 1]
 
@@ -48,10 +90,7 @@ def part1(_codes, verbose=False):
                 heading -= 90
             else:
                 heading += 90
-            if heading < 0:
-                heading += 360
-            if heading >= 360:
-                heading -= 360
+            heading = heading % 360
 
             # Move the robot forward
             if heading == 0:
@@ -68,7 +107,7 @@ def part1(_codes, verbose=False):
         except OpCode99:
             break
 
-    return painted
+    return painted, panels
 
 
 class OpCode99(Exception):
@@ -146,22 +185,35 @@ def parse_instruction(codes, point, relative_base):
     return opcode, operands, result_address
 
 
+OPCODES = {
+    1: "Add",
+    2: "Multiply",
+    3: "Input",
+    4: "Output",
+    5: "Jump-if-true",
+    6: "Jump-if-false",
+    7: "Less-than",
+    8: "Equals",
+    9: "Change-base",
+}
+
+
 def intcode_computer(
     _codes,
     phase_setting=None,
     input_signal=None,
     point=0,
     input_counter=0,
+    relative_base=0,
     return_on_code_4=False,
     verbose=False,
 ):
     codes = DynamicList(_codes)
-    relative_base = 0
     while True:
         opcode, operands, result_address = parse_instruction(codes, point, relative_base)
         if verbose:
             print()
-            print(f"Opcode {opcode}")
+            print(f"Opcode {opcode} - {OPCODES.get(opcode)}")
 
         if opcode in [1, 2]:
             skip = 4
@@ -194,7 +246,7 @@ def intcode_computer(
                     print(f"Output: {output}")
                 if return_on_code_4:
                     point += skip
-                    return (output, codes, point, input_counter)
+                    return (output, codes, point, input_counter, relative_base)
             point += skip
             if verbose:
                 print(f"Skipping {skip} to {point}")
@@ -256,3 +308,4 @@ if __name__ == "__main__":
         codes = [int(code) for code in f.read().split(",")]
         painted = part1(codes)
         print(len(painted))
+        part2(codes)
