@@ -6,14 +6,15 @@ import rasterio
 
 
 def part1(codes, verbose=False):
-    tiles = get_tiles(codes, verbose=verbose)
+    tiles, _ = get_tiles(codes, verbose=verbose)
     return len([el for el in tiles if el[2] == 2])
 
 
 def part2(codes, verbose=False):
     _codes = codes.copy()
-    # _codes[0] = 2
-    tiles = get_tiles(_codes, verbose=verbose)
+    _codes[0] = 2
+    tiles, score = get_tiles(_codes, verbose=verbose, play=True)
+    print(score)
     print_tiles(tiles)
     return tiles
 
@@ -21,45 +22,72 @@ def part2(codes, verbose=False):
 def print_tiles(tiles):
     width = max([el[0] for el in tiles]) + 1
     height = max([el[1] for el in tiles]) + 1
-    canvas = np.zeros((height, width))
+    canvas = np.zeros((3, height, width), dtype="uint8")
+    tile_to_color = {
+        0: [0, 0, 0],
+        1: [100, 100, 100],
+        2: [0, 100, 0],
+        3: [0, 0, 100],
+        4: [255, 0, 0],
+    }
     for x, y, tile in tiles:
-        canvas[y, x] = tile
+        canvas[:, y, x] = tile_to_color[tile]
     with rasterio.open(
-        "t.tiff",
-        "w",
-        driver="GTiff",
-        width=canvas.shape[0],
-        height=canvas.shape[1],
-        count=1,
-        dtype=canvas.dtype,
+        "t.tiff", "w", driver="GTiff", width=width, height=height, count=3, dtype=canvas.dtype
     ) as f:
-        f.write(canvas, 1)
+        f.write(canvas)
 
 
-def get_tiles(codes, verbose):
+def sign(a):
+    return 1 if a > 0 else -1 if a < 0 else 0
+
+
+def get_tiles(codes, play=False, verbose=False):
     point = 0
     relative_base = 0
     outputs = []
+    count = 0
+
+    if play:
+        joystick = 1
+        ball_x = 0
+        paddle_x = 0
+    else:
+        joystick = 0
+
     while True:
         try:
             output, codes, point, input_counter, relative_base = intcode_computer(
                 codes,
                 point=point,
+                phase_setting=joystick,
+                input_counter=0,
                 relative_base=relative_base,
                 return_on_code_4=True,
                 verbose=verbose,
             )
+            if play:
+                if count == 2:
+                    if output == 4:
+                        ball_x = outputs[-2]
+                    elif output == 3:
+                        paddle_x = outputs[-2]
+                    joystick = sign(ball_x - paddle_x)
+                count += 1
+                count = count % 3
             outputs.append(output)
-            assert input_counter == 0
         except OpCode99:
             break
 
     tiles = []
+    score = None
     for x, y, tile in zip(outputs[0::3], outputs[1::3], outputs[2::3]):
-        tiles.append((x, y, tile))
-    print(len(outputs) / 3, len(tiles))
+        if x == -1 and y == 0:
+            score = tile
+        else:
+            tiles.append((x, y, tile))
 
-    return tiles
+    return tiles, score
 
 
 class OpCode99(Exception):
