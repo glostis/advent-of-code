@@ -1,6 +1,8 @@
 import os
 import re
 
+import numpy as np
+
 
 class Moon:
     def __init__(self, x, y, z):
@@ -78,5 +80,38 @@ def part1():
         print()
 
 
+def part2():
+    moons = parse_file(os.path.join("data", "day12_1.txt"))
+    # moons = parse_file("example.txt")
+    dimensions = ["x", "y", "z"]
+    states = {dim: set() for dim in dimensions}
+    cycles = {dim: 0 for dim in dimensions}
+    i = 0
+    while dimensions:
+        state = {dim: [] for dim in dimensions}
+        for moon in moons:
+            for dim in dimensions:
+                state[dim].append((getattr(moon, dim), getattr(moon, f"v{dim}")))
+
+        for dim in dimensions:
+            state[dim] = tuple(state[dim])
+            if state[dim] not in states[dim]:
+                states[dim].add(state[dim])
+            else:
+                dimensions.pop(dimensions.index(dim))
+                cycles[dim] = i
+
+        for moon in moons:
+            moon.update_gravity(moons)
+
+        for moon in moons:
+            moon.update_position()
+
+        i += 1
+
+    return np.lcm.reduce(list(cycles.values()))
+
+
 if __name__ == "__main__":
     part1()
+    print(part2())
