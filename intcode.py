@@ -180,5 +180,10 @@ class Intcode:
             self.run_instruction(verbose=verbose)
 
     def run_til_output(self, verbose=False):
-        while self.opcode != 4:
+        # Not very pretty, but if we don't do this, the computer could
+        # already be uin opcode 4 or 99 when the function starts, so it would
+        # exit prematurely
+        self.run_instruction(verbose=verbose)
+
+        while self.opcode != 4 and self.opcode != 99:
             self.run_instruction(verbose=verbose)
