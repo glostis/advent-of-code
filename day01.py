@@ -23,8 +23,8 @@ def part2(masses):
 
 
 if __name__ == "__main__":
-    with open(os.path.join("data", "day1_1.txt")) as f:
+    with open(os.path.join("data", "day01_1.txt")) as f:
         print(part1([int(line.strip()) for line in f]))
 
-    with open(os.path.join("data", "day1_1.txt")) as f:
+    with open(os.path.join("data", "day01_1.txt")) as f:
         print(part2([int(line.strip()) for line in f]))
