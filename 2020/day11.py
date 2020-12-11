@@ -33,68 +33,55 @@ def border_layout(layout):
 
 
 def to_str(layout):
-    return "".join("".join(char for line in layout for char in line))
+    return "\n".join(["".join(char for char in line) for line in layout])
+
+
+def contaminate_neighbors(row, col, layout, occupied_neighbors, max_radius):
+    radius = 1
+    seen_directions = set()
+    while len(seen_directions) < 8 and radius <= max_radius:
+        left = col - radius
+        right = col + radius
+        upper = row - radius
+        bottom = row + radius
+        mapping = {
+            "l": (row, left),
+            "r": (row, right),
+            "u": (upper, col),
+            "b": (bottom, col),
+            "ul": (upper, left),
+            "bl": (bottom, left),
+            "ur": (upper, right),
+            "br": (bottom, right),
+        }
+        for direction, coords in mapping.items():
+            if direction not in seen_directions:
+                r, c = coords
+                p = layout[r + 1][c + 1]
+                if p in [" ", "L", "#"]:
+                    seen_directions.add(direction)
+                    if p != " ":
+                        occupied_neighbors[r][c] += 1
+        radius += 1
 
 
 def apply_rules(layout, num_adj_to_empty, max_radius):
-    new_layout = []
+    occupied_neighbors = [[0 for _ in range(len(layout[0]) - 2)] for _ in range(len(layout) - 2)]
+    new_layout = [[char for char in line] for line in layout]
 
     for row, line in enumerate(layout[1:-1]):
-        new_layout_line = []
         for col, position in enumerate(line[1:-1]):
-            if position == ".":
-                new_layout_line.append(".")
-            elif position in ["L", "#"]:
-                radius = 1
-                seen_directions = set()
-                occupied = 0
-                while (
-                    len(seen_directions) < 8
-                    and occupied < num_adj_to_empty
-                    and radius <= max_radius
-                ):
-                    left = col - radius
-                    right = col + radius
-                    upper = row - radius
-                    bottom = row + radius
-                    mapping = {
-                        "l": (row, left),
-                        "r": (row, right),
-                        "u": (upper, col),
-                        "b": (bottom, col),
-                        "ul": (upper, left),
-                        "bl": (bottom, left),
-                        "ur": (upper, right),
-                        "br": (bottom, right),
-                    }
-                    for direction, coords in mapping.items():
-                        if direction in seen_directions:
-                            pass
-                        else:
-                            r, c = coords
-                            r += 1
-                            c += 1
-                            p = layout[r][c]
-                            if p == ".":
-                                pass
-                            elif p in [" ", "L"]:
-                                seen_directions.add(direction)
-                            elif p == "#":
-                                occupied += 1
-                                seen_directions.add(direction)
-                            else:
-                                raise
-                    radius += 1
-                if occupied >= num_adj_to_empty and position == "#":
-                    new_layout_line.append("L")
-                elif occupied == 0 and position == "L":
-                    new_layout_line.append("#")
-                else:
-                    new_layout_line.append(position)
+            if position == "#":
+                contaminate_neighbors(row, col, layout, occupied_neighbors, max_radius)
 
-        new_layout.append(new_layout_line)
+    for row, line in enumerate(layout[1:-1]):
+        for col, position in enumerate(line[1:-1]):
+            if position == "#" and occupied_neighbors[row][col] >= num_adj_to_empty:
+                new_layout[row + 1][col + 1] = "L"
+            elif position == "L" and occupied_neighbors[row][col] == 0:
+                new_layout[row + 1][col + 1] = "#"
 
-    return border_layout(new_layout)
+    return new_layout
 
 
 def main():
