@@ -19,17 +19,16 @@ def part2(numbers, target):
     for i in range(n):
         total = numbers[i]
         j = i + 1
-        while j < n and total <= target:
+        while j < n and total < target:
             total += numbers[j]
             j += 1
         if total == target:
-            nums = numbers[i : j + 1]
+            nums = numbers[i : j]
             return min(nums) + max(nums)
 
 
 def main():
     with open(os.path.join("data", "day09.txt")) as f:
-    # with open("samp.txt") as f:
         numbers = [int(line.strip()) for line in f]
 
     target = part1(numbers)

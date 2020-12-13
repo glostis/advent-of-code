@@ -19,13 +19,13 @@ def main():
         forest = []
         for line in f:
             forest.append(line.strip())
-    print("Part 1:", traverse_forest(forest))
+    print(traverse_forest(forest))
 
     product = 1
     for slope in [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]:
         trees = traverse_forest(forest, slope)
         product *= trees
-    print("Part 2:", product)
+    print(product)
 
 
 if __name__ == "__main__":
