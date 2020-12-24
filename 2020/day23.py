@@ -6,16 +6,15 @@ def play_round(cups, current_cup, length=9):
     for _ in range(3):
         next_cup = cups[current_cup]
         next_cups.append(next_cup)
-        cups[current_cup] = cups.pop(next_cup)
+        cups[current_cup] = cups[next_cup]
 
     destination_cup = ((current_cup - 1) - 1) % length + 1
     while destination_cup in next_cups:
         destination_cup = ((destination_cup - 1) - 1) % length + 1
 
     for cup in reversed(next_cups):
-        link = cups[destination_cup]
+        cups[cup] = cups[destination_cup]
         cups[destination_cup] = cup
-        cups[cup] = link
 
     return cups[current_cup]
 
