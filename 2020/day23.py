@@ -43,13 +43,13 @@ def main():
     l = list(map(int, "123487596"))
     current_cup = l[0]
     length = len(l)
-    cups = dict()
+    cups = [0] * (length + 1)
     for i, c in enumerate(l):
         cups[c] = l[(i + 1) % length]
     print(part1(cups, current_cup, length))
     l.extend(range(10, 1000001))
     length = len(l)
-    cups = dict()
+    cups = [0] * (length + 1)
     for i, c in enumerate(l):
         cups[c] = l[(i + 1) % length]
     print(part2(cups, current_cup, length))
